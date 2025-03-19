@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SQL Visualizer</title>
+<style>
+    :root {
+        /* Light mode defaults */
+        --body-bg: white;
+        --editor-border: #ccc;
+        --history-bg: #f9f9f9;
+        --history-border: #ddd;
+        --er-diagram-bg: #fafafa;
+        --er-diagram-border: #ddd;
+        --output-border: #ddd;
+        --text-color: #333;
+        --table-bg: #f0f8ff;
+        --table-border: #333;
+        --table-title-bg: #4682b4;
+        --table-title-color: white;
+        --primary-key-color: #b22222;
+        --foreign-key-color: #228b22;
+        --results-table-bg-th: #f2f2f2;
+        --results-table-border: #ddd;
+        --reset-btn-bg: #f44246;
+        --reset-btn-hover-bg: #3a6d99;
+        --run-btn-bg: #28a745;
+        --run-btn-hover-bg: #218838;
+        --control-btn-bg: #4682b4;
+        --control-btn-hover-bg: #3a6d99;
+        --diagram-controls-bg: rgba(255, 255, 255, 0.8);
+        --diagram-controls-border: #ccc;
+        --relationship-line: #333;
+        --relationship-node-fill: #4682b4;
+        --relationship-node-stroke: #333;
+        --relationship-text-fill: #555;
+        --relationship-text-bg-fill: white;
+        --relationship-text-bg-stroke: #333;
+    }
+
+    /* Dark mode overrides based on browser preference */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --body-bg: #1e1e1e;
+            --editor-border: #555;
+            --history-bg: #2a2a2a;
+            --history-border: #444;
+            --er-diagram-bg: #252525;
+            --er-diagram-border: #444;
+            --output-border: #444;
+            --text-color: #ddd;
+            --table-bg: #2c3e50;
+            --table-border: #666;
+            --table-title-bg: #34495e;
+            --table-title-color: #fff;
+            --primary-key-color: #e74c3c;
+            --foreign-key-color: #2ecc71;
+            --results-table-bg-th: #333;
+            --results-table-border: #555;
+            --reset-btn-bg: #c0392b;
+            --reset-btn-hover-bg: #2980b9;
+            --run-btn-bg: #27ae60;
+            --run-btn-hover-bg: #219653;
+            --control-btn-bg: #3498db;
+            --control-btn-hover-bg: #2874a6;
+            --diagram-controls-bg: rgba(50, 50, 50, 0.8);
+            --diagram-controls-border: #666;
+            --relationship-line: #bbb;
+            --relationship-node-fill: #3498db;
+            --relationship-node-stroke: #666;
+            --relationship-text-fill: #ccc;
+            --relationship-text-bg-fill: #333;
+            --relationship-text-bg-stroke: #666;
+        }
+    }
+
+    body {
+        display: flex;
+        height: 100vh;
+        margin: 0;
+        overflow: hidden;
+        background-color: var(--body-bg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text-color);
+    }
+    #editor, #results {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        height: 100%;
+        overflow: hidden;
+    }
+    #editor {
+        width: 30%;
+        display: flex;
+        flex-direction: column;
+    }
+    #results {
+        width: 70%;
+        display: flex;
+        flex-direction: column;
+    }
+    #query {
+        width: 100%;
+        height: 30%;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 14px;
+        border: 1px solid var(--editor-border);
+        box-sizing: border-box;
+        resize: none;
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+    #history {
+        height: calc(70% - 50px);
+        border: 1px solid var(--history-border);
+        overflow-y: auto;
+        font-family: monospace;
+        background-color: var(--history-bg);
+        white-space: pre-wrap;
+        margin-top: 10px;
+    }
+    #er-diagram {
+        height: 70%;
+        overflow: hidden;
+        border: 1px solid var(--er-diagram-border);
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: var(--er-diagram-bg);
+        position: relative;
+    }
+    #output {
+        height: 30%;
+        overflow: auto;
+        border: 1px solid var(--output-border);
+        padding: 10px;
+    }
+    table.results-table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    table.results-table th, table.results-table td {
+        border: 1px solid var(--results-table-border);
+        padding: 8px;
+    }
+    table.results-table th {
+        background-color: var(--results-table-bg-th);
+    }
+    h2, h3 {
+        margin: 0 0 10px 0;
+        color: var(--text-color);
+    }
+    #buttons-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+    }
+    #reset-btn, #run-btn {
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 14px;
+        background-color: var(--reset-btn-bg);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    #run-btn {
+        margin: 0 5px 0 0;
+        background-color: var(--run-btn-bg);
+    }
+    #reset-btn:hover {
+        background-color: var(--reset-btn-hover-bg);
+    }
+    #run-btn:hover {
+        background-color: var(--run-btn-hover-bg);
+    }
+    .table-container {
+        font-family: monospace;
+        font-size: 12px;
+        display: inline-block;
+        border: 2px solid var(--table-border);
+        border-radius: 5px;
+        margin: 30px;
+        padding: 5px;
+        background-color: var(--table-bg);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        min-width: 150px;
+        position: absolute;
+        z-index: 10;
+    }
+    .table-title {
+        background-color: var(--table-title-bg);
+        color: var(--table-title-color);
+        padding: 8px;
+        text-align: center;
+        font-weight: bold;
+        border-radius: 3px;
+    }
+    .table-field {
+        padding: 5px;
+        border-bottom: 1px solid var(--editor-border);
+    }
+    .table-field:last-child {
+        border-bottom: none;
+    }
+    .primary-key {
+        font-weight: bold;
+        color: var(--primary-key-color);
+    }
+    .foreign-key {
+        font-style: italic;
+        color: var(--foreign-key-color);
+    }
+    .relationship-line {
+        stroke: var(--relationship-line);
+        stroke-width: 1.5;
+    }
+    .relationship-node {
+        fill: var(--relationship-node-fill);
+        stroke: var(--relationship-node-stroke);
+        stroke-width: 1;
+        cursor: pointer;
+    }
+    .relationship-text {
+        font-size: 12px;
+        fill: var(--relationship-text-fill);
+        visibility: hidden;
+        pointer-events: none;
+        padding: 3px;
+        border-radius: 3px;
+    }
+    .relationship-text-bg {
+        fill: var(--relationship-text-bg-fill);
+        stroke: var(--relationship-text-bg-stroke);
+        stroke-width: 1;
+        rx: 3;
+        ry: 3;
+        visibility: hidden;
+    }
+    .relationships-group:hover .relationship-text,
+    .relationships-group:hover .relationship-text-bg {
+        visibility: visible;
+    }
+    #diagram-container {
+        width: 3000px;
+        height: 2000px;
+        position: relative;
+        overflow: auto;
+    }
+    #diagram-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: auto;
+    }
+    #diagram-controls {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        z-index: 100;
+        background-color: var(--diagram-controls-bg);
+        padding: 5px;
+        border-radius: 5px;
+        border: 1px solid var(--diagram-controls-border);
+    }
+    .control-btn {
+        margin: 2px;
+        padding: 5px 10px;
+        background-color: var(--control-btn-bg);
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+    .control-btn:hover {
+        background-color: var(--control-btn-hover-bg);
+    }
+    input:focus, textarea:focus {
+        outline: none;
+        border: 1px solid #000000;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+    }
+</style>
+</head>
+<body>
+    <div id="editor">
+        <h2>Write SQL</h2>
+        <textarea id="query" placeholder="Type SQL here (Ctrl+Enter to run)"></textarea>
+        <div id="buttons-row">
+            <button id="run-btn" onclick="runQuery(queryInput.value.trim())">Run SQL</button>
+            <button id="reset-btn" onclick="resetAll()">Reset Database</button>
+        </div>
+        <h2>History</h2>
+        <div id="history"></div>
+    </div>
+    <div id="results">
+        <h2>Database Structure</h2>
+        <div id="er-diagram">
+            <div id="diagram-wrapper">
+                <div id="diagram-container"></div>
+            </div>
+            <div id="diagram-controls">
+                <button class="control-btn" id="center-btn">Center View</button>
+                <button class="control-btn" id="zoom-in-btn">+</button>
+                <button class="control-btn" id="zoom-out-btn">-</button>
+            </div>
+        </div>
+        <h2>Query Results</h2>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        //resetAll()
+        const queryInput = document.getElementById('query');
+        const historyDiv = document.getElementById('history');
+        const outputDiv = document.getElementById('output');
+        const diagramContainer = document.getElementById('diagram-container');
+        const diagramWrapper = document.getElementById('diagram-wrapper');
+        const centerBtn = document.getElementById('center-btn');
+        const zoomInBtn = document.getElementById('zoom-in-btn');
+        const zoomOutBtn = document.getElementById('zoom-out-btn');
+        const relationshipTooltip = document.getElementById('relationship-tooltip');
+        
+        let currentScale = 1;
+        let tablePositions = [];
+        
+        // Add event listeners for control buttons
+        centerBtn.addEventListener('click', centerDiagram);
+        zoomInBtn.addEventListener('click', () => zoomDiagram(0.1));
+        zoomOutBtn.addEventListener('click', () => zoomDiagram(-0.1));
+        
+        // Update ER diagram when page loads
+        document.addEventListener('DOMContentLoaded', updateERDiagram);
+
+        // Handle key presses
+        queryInput.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'Enter') {
+                event.preventDefault();
+                runQuery(queryInput.value.trim());
+            }
+        });
+
+        function runQuery(sql) {
+            if (!sql) return;
+
+            fetch('/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sql: sql })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if ('error' in data) {
+                    outputDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                } else {
+                    // Only add successful queries to history
+                    const historyEntry = document.createElement('div');
+                    historyEntry.textContent = sql;
+                    historyEntry.style.marginBottom = '10px';
+                    historyEntry.style.padding = '5px';
+                    historyEntry.style.borderLeft = '3px solid #4682b4';
+                    historyDiv.appendChild(historyEntry);
+                    historyDiv.scrollTop = historyDiv.scrollHeight;
+                    
+                    // Clear the textarea
+                    queryInput.value = '';
+                    
+                    if ('message' in data) {
+                        outputDiv.innerHTML = `<p>${data.message} (Rows affected: ${data.rowsAffected})</p>`;
+                        // Update ER diagram after schema changes
+                        updateERDiagram();
+                    } else {
+                        if (data.length === 0) {
+                            outputDiv.innerHTML = '<p>No results.</p>';
+                            return;
+                        }
+                        let html = '<table class="results-table"><tr>';
+                        Object.keys(data[0]).forEach(col => {
+                            html += `<th>${col}</th>`;
+                        });
+                        html += '</tr>';
+                        data.forEach(row => {
+                            html += '<tr>';
+                            Object.values(row).forEach(val => {
+                                html += `<td>${val === null ? 'NULL' : val}</td>`;
+                            });
+                            html += '</tr>';
+                        });
+                        html += '</table>';
+                        outputDiv.innerHTML = html;
+                    }
+                }
+            })
+            .catch(err => {
+                outputDiv.innerHTML = `<p style="color: red;">Error: ${err.message}</p>`;
+                // Don't add failed queries to history
+            });
+        }
+
+        function updateERDiagram() {
+            // Clear the container first
+            diagramContainer.innerHTML = '';
+            
+            // Get the schema information from the database
+            fetch('/schema', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.tables && data.tables.length > 0) {
+                    // Create SVG for the connections
+                    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    svg.setAttribute("width", "100%");
+                    svg.setAttribute("height", "100%");
+                    svg.style.position = "absolute";
+                    svg.style.top = 0;
+                    svg.style.left = 0;
+                    svg.style.zIndex = 5;
+                    diagramContainer.appendChild(svg);
+                    
+                    // Calculate positions for tables in a grid
+                    tablePositions = calculateTablePositions(data.tables);
+                    
+                    // Create tables
+                    data.tables.forEach((table, index) => {
+                        const tableDiv = document.createElement("div");
+                        tableDiv.className = "table-container";
+                        tableDiv.id = `table-${table.name}`;
+                        tableDiv.style.position = "absolute";
+                        tableDiv.style.left = `${tablePositions[index].x}px`;
+                        tableDiv.style.top = `${tablePositions[index].y}px`;
+                        
+                        const titleDiv = document.createElement("div");
+                        titleDiv.className = "table-title";
+                        titleDiv.textContent = table.name;
+                        tableDiv.appendChild(titleDiv);
+                        
+                        table.columns.forEach(column => {
+                            const fieldDiv = document.createElement("div");
+                            fieldDiv.className = "table-field";
+                            if (column.pk) fieldDiv.className += " primary-key";
+                            if (column.fk) fieldDiv.className += " foreign-key";
+                            
+                            fieldDiv.textContent = `${column.name} (${column.type})`;
+                            if (column.pk) fieldDiv.textContent += ' PK';
+                            tableDiv.appendChild(fieldDiv);
+                        });
+                        
+                        diagramContainer.appendChild(tableDiv);
+                    });
+                    
+                    // Draw relationship lines after elements are in DOM
+                    setTimeout(() => {
+                        drawRelationships(data.tables, svg);
+                        // Center the diagram after drawing
+                        centerDiagram();
+                    }, 100);
+                } else {
+                    diagramContainer.innerHTML = '<p>No tables found in the database.</p>';
+                }
+            })
+            .catch(err => {
+                diagramContainer.innerHTML = `<p style="color: red;">Error loading schema: ${err.message}</p>`;
+            });
+        }
+        
+        function calculateTablePositions(tables) {
+            const positions = [];
+            const tableCount = tables.length;
+            
+            if (tableCount === 1) {
+                // Single table centered
+                positions.push({ x: 1500 - 75, y: 1000 - 75 });
+            }else {
+                // Multiple tables in a grid-like arrangement
+                const cols = Math.ceil(Math.sqrt(tableCount));
+                const rows = Math.ceil(tableCount / cols);
+                
+                const colWidth = 400;
+                const rowHeight = 300;
+                
+                // Calculate starting position to center the grid
+                const startX = 1500 - (cols * colWidth) / 2;
+                const startY = 1000 - (rows * rowHeight) / 2;
+                
+                for (let i = 0; i < tableCount; i++) {
+                    const row = Math.floor(i / cols);
+                    const col = i % cols;
+                    
+                    positions.push({
+                        x: startX + col * colWidth,
+                        y: startY + row * rowHeight
+                    });
+                }
+            }
+            
+            return positions;
+        }
+        
+function drawRelationships(tables, svg) {
+    // First clear any existing relationships
+    while (svg.firstChild) {
+        svg.removeChild(svg.firstChild);
+    }
+    
+    tables.forEach(table => {
+        table.columns.forEach(column => {
+            if (column.fk && column.references) {
+                const [targetTableName, targetColumn] = column.references.split('.');
+                
+                const sourceTable = document.getElementById(`table-${table.name}`);
+                const targetTable = document.getElementById(`table-${targetTableName}`);
+                
+                if (sourceTable && targetTable) {
+                    const sourceRect = sourceTable.getBoundingClientRect();
+                    const targetRect = targetTable.getBoundingClientRect();
+                    
+                    // Get container offset
+                    const containerRect = diagramContainer.getBoundingClientRect();
+                    const wrapperRect = diagramWrapper.getBoundingClientRect();
+                    
+                    // Calculate center points in SVG coordinates
+                    const sourceOffset = getElementOffset(sourceTable, diagramContainer);
+                    const targetOffset = getElementOffset(targetTable, diagramContainer);
+                    
+                    const x1 = sourceOffset.left + sourceTable.offsetWidth / 2;
+                    const y1 = sourceOffset.top + sourceTable.offsetHeight / 2;
+                    const x2 = targetOffset.left + targetTable.offsetWidth / 2;
+                    const y2 = targetOffset.top + targetTable.offsetHeight / 2;
+                    
+                    // Create a group for the relationship
+                    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    group.classList.add("relationships-group");
+                    
+                    // Create the line
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("class", "relationship-line");
+                    line.setAttribute("x1", x1);
+                    line.setAttribute("y1", y1);
+                    line.setAttribute("x2", x2);
+                    line.setAttribute("y2", y2);
+                    group.appendChild(line);
+                    
+                    // Calculate midpoint
+                    const midX = (x1 + x2) / 2;
+                    const midY = (y1 + y2) / 2;
+                    
+                    // Create a circle at the midpoint
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("class", "relationship-node");
+                    circle.setAttribute("cx", midX);
+                    circle.setAttribute("cy", midY);
+                    circle.setAttribute("r", 10);
+                    group.appendChild(circle);
+                    
+                    // Add a title element for the native tooltip
+                    const relationshipText = `${table.name}.${column.name} → ${targetTableName}.${targetColumn}`;
+                    const titleElem = document.createElementNS("http://www.w3.org/2000/svg", "title");
+                    titleElem.textContent = relationshipText;
+                    group.appendChild(titleElem);
+                    
+                    svg.appendChild(group);
+                }
+            }
+        });
+    });
+}
+
+
+        function getElementOffset(element, container) {
+            let left = 0;
+            let top = 0;
+            let current = element;
+            
+            while (current && current !== container) {
+                left += current.offsetLeft - current.scrollLeft;
+                top += current.offsetTop - current.scrollTop;
+                current = current.offsetParent;
+            }
+            
+            return { left, top };
+        }
+        
+        function centerDiagram() {
+            if (tablePositions.length === 0) return;
+            
+            // Calculate the center of all tables
+            let sumX = 0, sumY = 0;
+            tablePositions.forEach(pos => {
+                sumX += pos.x;
+                sumY += pos.y;
+            });
+            
+            const centerX = sumX / tablePositions.length;
+            const centerY = sumY / tablePositions.length;
+            
+            // Scroll to center
+            diagramWrapper.scrollLeft = centerX - diagramWrapper.clientWidth / 2.75;
+            diagramWrapper.scrollTop = centerY - diagramWrapper.clientHeight / 2.75;
+        }
+        
+        function zoomDiagram(delta) {
+            const newScale = Math.max(0.5, Math.min(2, currentScale + delta));
+            if (newScale === currentScale) return;
+            
+            currentScale = newScale;
+            diagramContainer.style.transform = `scale(${currentScale})`;
+            diagramContainer.style.transformOrigin = 'top left';
+            
+            // Adjust container size to account for scaling
+            diagramContainer.style.width = `${3000 / currentScale}px`;
+            diagramContainer.style.height = `${2000 / currentScale}px`;
+        }
+
+        function resetAll() {
+            fetch('/reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                queryInput.value = '';
+                historyDiv.innerHTML = '';
+                outputDiv.innerHTML = `<p>${data.message}</p>`;
+                // Also update ER diagram after reset
+                updateERDiagram();
+            })
+            .catch(err => {
+                outputDiv.innerHTML = `<p style="color: red;">Error: ${err.message}</p>`;
+            });
+        }
+    </script>
+</body>
+</html>
