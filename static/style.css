@@ -1,0 +1,281 @@
+:root {
+  /* Light mode defaults */
+  --body-bg: white;
+  --editor-border: #ccc;
+  --history-bg: #f9f9f9;
+  --history-border: #ddd;
+  --er-diagram-bg: #fafafa;
+  --er-diagram-border: #ddd;
+  --output-border: #ddd;
+  --text-color: #333;
+  --table-bg: #f0f8ff;
+  --table-border: #333;
+  --table-title-bg: #4682b4;
+  --table-title-color: white;
+  --primary-key-color: #b22222;
+  --foreign-key-color: #228b22;
+  --results-table-bg-th: #f2f2f2;
+  --results-table-border: #ddd;
+  --reset-btn-bg: #f44246;
+  --reset-btn-hover-bg: #3a6d99;
+  --run-btn-bg: #28a745;
+  --run-btn-hover-bg: #218838;
+  --control-btn-bg: #4682b4;
+  --control-btn-hover-bg: #3a6d99;
+  --diagram-controls-bg: rgba(255, 255, 255, 0.8);
+  --diagram-controls-border: #ccc;
+  --relationship-line: #333;
+  --relationship-node-fill: #4682b4;
+  --relationship-node-stroke: #333;
+  --relationship-text-fill: #555;
+  --relationship-text-bg-fill: white;
+  --relationship-text-bg-stroke: #333;
+}
+
+/* Dark mode overrides based on browser preference */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --body-bg: #1e1e1e;
+    --editor-border: #555;
+    --history-bg: #2a2a2a;
+    --history-border: #444;
+    --er-diagram-bg: #252525;
+    --er-diagram-border: #444;
+    --output-border: #444;
+    --text-color: #ddd;
+    --table-bg: #2c3e50;
+    --table-border: #666;
+    --table-title-bg: #34495e;
+    --table-title-color: #fff;
+    --primary-key-color: #e74c3c;
+    --foreign-key-color: #2ecc71;
+    --results-table-bg-th: #333;
+    --results-table-border: #555;
+    --reset-btn-bg: #c0392b;
+    --reset-btn-hover-bg: #2980b9;
+    --run-btn-bg: #27ae60;
+    --run-btn-hover-bg: #219653;
+    --control-btn-bg: #3498db;
+    --control-btn-hover-bg: #2874a6;
+    --diagram-controls-bg: rgba(50, 50, 50, 0.8);
+    --diagram-controls-border: #666;
+    --relationship-line: #bbb;
+    --relationship-node-fill: #3498db;
+    --relationship-node-stroke: #666;
+    --relationship-text-fill: #ccc;
+    --relationship-text-bg-fill: #333;
+    --relationship-text-bg-stroke: #666;
+  }
+}
+
+body {
+  display: flex;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--body-bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text-color);
+}
+#editor, #results {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  height: 100%;
+  overflow: hidden;
+}
+#editor {
+  width: 30%;
+  display: flex;
+  flex-direction: column;
+}
+#results {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+}
+#query {
+  width: 100%;
+  height: 30%;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 14px;
+  border: 1px solid var(--editor-border);
+  box-sizing: border-box;
+  resize: none;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+#history {
+  height: calc(70% - 50px);
+  border: 1px solid var(--history-border);
+  overflow-y: auto;
+  font-family: monospace;
+  background-color: var(--history-bg);
+  white-space: pre-wrap;
+  margin-top: 10px;
+}
+#er-diagram {
+  height: 70%;
+  overflow: hidden;
+  border: 1px solid var(--er-diagram-border);
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: var(--er-diagram-bg);
+  position: relative;
+}
+#output {
+  height: 30%;
+  overflow: auto;
+  border: 1px solid var(--output-border);
+  padding: 10px;
+}
+table.results-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+table.results-table th, table.results-table td {
+  border: 1px solid var(--results-table-border);
+  padding: 8px;
+}
+table.results-table th {
+  background-color: var(--results-table-bg-th);
+}
+h2, h3 {
+  margin: 0 0 10px 0;
+  color: var(--text-color);
+}
+#buttons-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+#reset-btn, #run-btn {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  background-color: var(--reset-btn-bg);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+#run-btn {
+  margin: 0 5px 0 0;
+  background-color: var(--run-btn-bg);
+}
+#reset-btn:hover {
+  background-color: var(--reset-btn-hover-bg);
+}
+#run-btn:hover {
+  background-color: var(--run-btn-hover-bg);
+}
+.table-container {
+  font-family: monospace;
+  font-size: 12px;
+  display: inline-block;
+  border: 2px solid var(--table-border);
+  border-radius: 5px;
+  margin: 30px;
+  padding: 5px;
+  background-color: var(--table-bg);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  min-width: 150px;
+  position: absolute;
+  z-index: 10;
+}
+.table-title {
+  background-color: var(--table-title-bg);
+  color: var(--table-title-color);
+  padding: 8px;
+  text-align: center;
+  font-weight: bold;
+  border-radius: 3px;
+}
+.table-field {
+  padding: 5px;
+  border-bottom: 1px solid var(--editor-border);
+}
+.table-field:last-child {
+  border-bottom: none;
+}
+.primary-key {
+  font-weight: bold;
+  color: var(--primary-key-color);
+}
+.foreign-key {
+  font-style: italic;
+  color: var(--foreign-key-color);
+}
+.relationship-line {
+  stroke: var(--relationship-line);
+  stroke-width: 1.5;
+}
+.relationship-node {
+  fill: var(--relationship-node-fill);
+  stroke: var(--relationship-node-stroke);
+  stroke-width: 1;
+  cursor: pointer;
+}
+.relationship-text {
+  font-size: 12px;
+  fill: var(--relationship-text-fill);
+  visibility: hidden;
+  pointer-events: none;
+  padding: 3px;
+  border-radius: 3px;
+}
+.relationship-text-bg {
+  fill: var(--relationship-text-bg-fill);
+  stroke: var(--relationship-text-bg-stroke);
+  stroke-width: 1;
+  rx: 3;
+  ry: 3;
+  visibility: hidden;
+}
+.relationships-group:hover .relationship-text,
+.relationships-group:hover .relationship-text-bg {
+  visibility: visible;
+}
+#diagram-container {
+  width: 3000px;
+  height: 2000px;
+  position: relative;
+  overflow: auto;
+}
+#diagram-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+}
+#diagram-controls {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 100;
+  background-color: var(--diagram-controls-bg);
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid var(--diagram-controls-border);
+}
+.control-btn {
+  margin: 2px;
+  padding: 5px 10px;
+  background-color: var(--control-btn-bg);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.control-btn:hover {
+  background-color: var(--control-btn-hover-bg);
+}
+input:focus, textarea:focus {
+  outline: none;
+  border: 1px solid #000000;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
