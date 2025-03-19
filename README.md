@@ -14,6 +14,8 @@ go get -u github.com/gorilla/mux
 4. Run with `go run main.go`.
 5: Go to `http://localhost:8080/`
 
+> Did you clone the repo?
+
 # Here is what is used to test it
 
 ### 1. **Table Creation**
