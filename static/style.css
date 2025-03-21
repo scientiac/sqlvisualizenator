@@ -150,7 +150,7 @@ h2, h3 {
   justify-content: space-between;
   margin: 10px 0;
 }
-#reset-btn, #run-btn {
+#reset-btn, #run-btn, #import-btn, #clear-history-btn {
   width: 100%;
   padding: 8px 12px;
   font-size: 14px;
@@ -161,6 +161,25 @@ h2, h3 {
   cursor: pointer;
   transition: background-color 0.3s;
 }
+
+#reset-btn {
+  margin: 0 5px 0 0;
+}
+
+#import-btn {
+  background-color: var(--run-btn-bg);
+}
+
+#history-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+#clear-history-btn {
+  height: 2rem;
+  width: unset;
+}
+
 #run-btn {
   margin: 0 5px 0 0;
   background-color: var(--run-btn-bg);
