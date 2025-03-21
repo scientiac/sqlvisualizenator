@@ -12,9 +12,14 @@
         <div id="buttons-row">
             <button id="run-btn" onclick="runQuery(queryInput.value.trim())">Run SQL</button>
             <button id="reset-btn" onclick="resetAll()">Reset Database</button>
+            <button id="import-btn">Import SQL File</button>
+            <input type="file" id="file-input" accept=".sql" style="display: none;">
         </div>
-        <h2>History</h2>
-        <div id="history"></div>
+<div id="history-header">
+  <h2>History</h2>
+  <button id="clear-history-btn">Clear History</button>
+</div>
+<div id="history"></div>
     </div>
     <div id="results">
         <h2>Database Structure</h2>
