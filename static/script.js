@@ -1,4 +1,3 @@
-resetAll()
 const queryInput = document.getElementById('query');
 const historyDiv = document.getElementById('history');
 const outputDiv = document.getElementById('output');
@@ -11,6 +10,38 @@ const relationshipTooltip = document.getElementById('relationship-tooltip');
 
 let currentScale = 1;
 let tablePositions = [];
+
+// Add reference to the new elements
+const importBtn = document.getElementById('import-btn');
+const fileInput = document.getElementById('file-input');
+
+// Set up event listeners for file import
+importBtn.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (file && file.name.endsWith('.sql')) {
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const sqlContent = e.target.result;
+      // Put the SQL content into the query input
+      queryInput.value = sqlContent;
+
+      // Optionally, you can also run the query automatically
+      // runQuery(sqlContent);
+    };
+
+    reader.readAsText(file);
+  } else {
+    outputDiv.innerHTML = '<p style="color: red;">Please select a valid .sql file.</p>';
+  }
+
+  // Reset the file input so the same file can be selected again
+  fileInput.value = '';
+});
 
 // Add event listeners for control buttons
 centerBtn.addEventListener('click', centerDiagram);
@@ -28,6 +59,19 @@ queryInput.addEventListener('keydown', function(event) {
   }
 });
 
+// Add references to new elements
+const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+// Load history when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  loadHistoryFromStorage();
+  updateERDiagram();
+});
+
+// Add event listener for clear history button
+clearHistoryBtn.addEventListener('click', clearHistory);
+
+// Modify runQuery to save successful queries to localStorage
 function runQuery(sql) {
   if (!sql) return;
 
@@ -47,13 +91,7 @@ function runQuery(sql) {
         outputDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
       } else {
         // Only add successful queries to history
-        const historyEntry = document.createElement('div');
-        historyEntry.textContent = sql;
-        historyEntry.style.marginBottom = '10px';
-        historyEntry.style.padding = '5px';
-        historyEntry.style.borderLeft = '3px solid #4682b4';
-        historyDiv.appendChild(historyEntry);
-        historyDiv.scrollTop = historyDiv.scrollHeight;
+        addToHistory(sql);
 
         // Clear the textarea
         queryInput.value = '';
@@ -88,6 +126,81 @@ function runQuery(sql) {
       outputDiv.innerHTML = `<p style="color: red;">Error: ${err.message}</p>`;
       // Don't add failed queries to history
     });
+}
+
+// Function to add a query to history and save to localStorage
+function addToHistory(sql) {
+  // Create history entry in the DOM
+  const historyEntry = document.createElement('div');
+  historyEntry.textContent = sql;
+  historyEntry.className = 'history-entry';
+  historyEntry.style.marginBottom = '10px';
+  historyEntry.style.padding = '5px';
+  historyEntry.style.borderLeft = '3px solid #4682b4';
+  historyEntry.style.cursor = 'pointer';
+
+  // Add click event to load the SQL back into the query input
+  historyEntry.addEventListener('click', () => {
+    queryInput.value = sql;
+    queryInput.focus();
+  });
+
+  historyDiv.appendChild(historyEntry);
+  historyDiv.scrollTop = historyDiv.scrollHeight;
+
+  // Save to localStorage
+  let historyItems = JSON.parse(localStorage.getItem('sqlHistory') || '[]');
+
+  // Prevent duplicates by removing any identical existing entries
+  historyItems = historyItems.filter(item => item !== sql);
+
+  // Add new query at the end
+  historyItems.push(sql);
+
+  // Limit history size (optional)
+  if (historyItems.length > 100) {
+    historyItems = historyItems.slice(-100);
+  }
+
+  localStorage.setItem('sqlHistory', JSON.stringify(historyItems));
+}
+
+// Function to load history from localStorage
+function loadHistoryFromStorage() {
+  const historyItems = JSON.parse(localStorage.getItem('sqlHistory') || '[]');
+
+  // Clear existing history display
+  historyDiv.innerHTML = '';
+
+  // Add each item to the history display
+  historyItems.forEach(sql => {
+    const historyEntry = document.createElement('div');
+    historyEntry.textContent = sql;
+    historyEntry.className = 'history-entry';
+    historyEntry.style.marginBottom = '10px';
+    historyEntry.style.padding = '5px';
+    historyEntry.style.borderLeft = '3px solid #4682b4';
+    historyEntry.style.cursor = 'pointer';
+
+    // Add click event to load the SQL back into the query input
+    historyEntry.addEventListener('click', () => {
+      queryInput.value = sql;
+      queryInput.focus();
+    });
+
+    historyDiv.appendChild(historyEntry);
+  });
+}
+
+// Function to clear history
+function clearHistory() {
+  if (confirm('Are you sure you want to clear all history?')) {
+    // Clear localStorage
+    localStorage.removeItem('sqlHistory');
+
+    // Clear history display
+    historyDiv.innerHTML = '';
+  }
 }
 
 function updateERDiagram() {
@@ -319,7 +432,6 @@ function resetAll() {
     })
     .then(data => {
       queryInput.value = '';
-      historyDiv.innerHTML = '';
       outputDiv.innerHTML = `<p>${data.message}</p>`;
       // Also update ER diagram after reset
       updateERDiagram();
