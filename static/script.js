@@ -130,45 +130,37 @@ function runQuery(sql) {
 
 // Function to add a query to history and save to localStorage
 function addToHistory(sql) {
-  // Create history entry in the DOM
-  const historyEntry = document.createElement('div');
-  historyEntry.textContent = sql;
-  historyEntry.className = 'history-entry';
-  historyEntry.style.marginBottom = '10px';
-  historyEntry.style.padding = '5px';
-  historyEntry.style.borderLeft = '3px solid #4682b4';
-  historyEntry.style.cursor = 'pointer';
+  // Split SQL into individual commands
+  const commands = splitSqlCommands(sql);
 
-  // Add click event to load the SQL back into the query input
-  historyEntry.addEventListener('click', () => {
-    queryInput.value = sql;
-    queryInput.focus();
-  });
-
-  historyDiv.appendChild(historyEntry);
-  historyDiv.scrollTop = historyDiv.scrollHeight;
-
-  // Save to localStorage
+  // Get existing history
   let historyItems = JSON.parse(localStorage.getItem('sqlHistory') || '[]');
 
-  // Prevent duplicates by removing any identical existing entries
-  historyItems = historyItems.filter(item => item !== sql);
+  // Add each command to history
+  commands.forEach(command => {
+    if (command.trim() === '') return; // Skip empty commands
 
-  // Add new query at the end
-  historyItems.push(sql);
+    // Remove duplicate from history array (if exists)
+    historyItems = historyItems.filter(item => item !== command);
 
-  // Limit history size (optional)
+    // Add new command at the end
+    historyItems.push(command);
+  });
+
+  // Limit history size
   if (historyItems.length > 100) {
     historyItems = historyItems.slice(-100);
   }
 
+  // Save to localStorage
   localStorage.setItem('sqlHistory', JSON.stringify(historyItems));
+
+  // Refresh the history display
+  refreshHistoryDisplay(historyItems);
 }
 
-// Function to load history from localStorage
-function loadHistoryFromStorage() {
-  const historyItems = JSON.parse(localStorage.getItem('sqlHistory') || '[]');
-
+// Function to refresh the history display
+function refreshHistoryDisplay(historyItems) {
   // Clear existing history display
   historyDiv.innerHTML = '';
 
@@ -190,7 +182,111 @@ function loadHistoryFromStorage() {
 
     historyDiv.appendChild(historyEntry);
   });
+
+  // Scroll to bottom of history
+  historyDiv.scrollTop = historyDiv.scrollHeight;
 }
+
+// Function to split SQL into individual commands
+function splitSqlCommands(sql) {
+  const commands = [];
+  let currentCommand = '';
+  let inStringLiteral = false;
+  let stringDelimiter = '';
+  let i = 0;
+
+  while (i < sql.length) {
+    const char = sql[i];
+    const nextChar = sql[i + 1] || '';
+
+    // Handle string literals
+    if ((char === "'" || char === '"') && (i === 0 || sql[i - 1] !== '\\')) {
+      if (!inStringLiteral) {
+        inStringLiteral = true;
+        stringDelimiter = char;
+      } else if (char === stringDelimiter) {
+        inStringLiteral = false;
+      }
+    }
+
+    // Handle comments
+    if (char === '-' && nextChar === '-' && !inStringLiteral) {
+      // Skip to the end of line
+      currentCommand += char + nextChar;
+      i += 2;
+      while (i < sql.length && sql[i] !== '\n') {
+        currentCommand += sql[i];
+        i++;
+      }
+      continue;
+    }
+
+    // Handle semicolons (command separator)
+    if (char === ';' && !inStringLiteral) {
+      currentCommand += char;
+      commands.push(currentCommand.trim());
+      currentCommand = '';
+      i++;
+      continue;
+    }
+
+    currentCommand += char;
+    i++;
+  }
+
+  // Add the last command if it's not empty
+  if (currentCommand.trim()) {
+    commands.push(currentCommand.trim());
+  }
+
+  // If no commands were separated (no semicolons found), 
+  // try splitting by SQL statements that start with CREATE, ALTER, INSERT, etc.
+  if (commands.length <= 1 && currentCommand.includes('\n')) {
+    // Define SQL command keywords
+    const sqlKeywords = [
+      'CREATE', 'ALTER', 'DROP', 'INSERT', 'UPDATE', 'DELETE',
+      'SELECT', 'GRANT', 'REVOKE', 'COMMIT', 'ROLLBACK', 'BEGIN'
+    ];
+
+    // Reset commands array
+    commands.length = 0;
+
+    // Split by lines and group into commands
+    const lines = sql.split('\n');
+    currentCommand = '';
+
+    for (let line of lines) {
+      const trimmedLine = line.trim();
+
+      // Check if line starts with SQL keyword
+      const startsWithKeyword = sqlKeywords.some(keyword =>
+        trimmedLine.toUpperCase().startsWith(keyword + ' ') ||
+        trimmedLine.toUpperCase() === keyword
+      );
+
+      if (startsWithKeyword && currentCommand.trim()) {
+        commands.push(currentCommand.trim());
+        currentCommand = line;
+      } else {
+        currentCommand += (currentCommand ? '\n' : '') + line;
+      }
+    }
+
+    // Add the last command
+    if (currentCommand.trim()) {
+      commands.push(currentCommand.trim());
+    }
+  }
+
+  return commands;
+}
+
+// Function to load history from localStorage
+function loadHistoryFromStorage() {
+  const historyItems = JSON.parse(localStorage.getItem('sqlHistory') || '[]');
+  refreshHistoryDisplay(historyItems);
+}
+
 
 // Function to clear history
 function clearHistory() {
