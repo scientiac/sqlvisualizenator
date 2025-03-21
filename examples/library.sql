@@ -1,10 +1,4 @@
 -- simple library database
--- first, let's drop the tables if they already exist
-drop table if exists authors;
-drop table if exists books;
-drop table if exists publishers;
-drop table if exists book_authors;
-
 -- create authors table
 create table authors (
     author_id integer primary key,
